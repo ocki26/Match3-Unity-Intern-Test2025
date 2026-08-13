@@ -36,7 +36,7 @@ public class UIPanelGame : MonoBehaviour, IMenu
 
             if (rt != null && pauseRt != null)
             {
-                // Position neatly below Pause button with compact size and clean gap
+                // Position neatly below Pause button with clean dimensions
                 rt.anchoredPosition = pauseRt.anchoredPosition + new Vector2(0, -60f);
                 rt.sizeDelta = new Vector2(130f, 42f);
             }
@@ -47,11 +47,23 @@ public class UIPanelGame : MonoBehaviour, IMenu
             m_txtAutoplay = btnToggleAutoplay.GetComponentInChildren<Text>();
             if (m_txtAutoplay != null)
             {
+                RectTransform textRt = m_txtAutoplay.GetComponent<RectTransform>();
+                if (textRt != null)
+                {
+                    textRt.anchorMin = Vector2.zero;
+                    textRt.anchorMax = Vector2.one;
+                    textRt.offsetMin = Vector2.zero;
+                    textRt.offsetMax = Vector2.zero;
+                }
+
                 m_txtAutoplay.text = "AUTO: OFF";
-                m_txtAutoplay.fontSize = 15;
-                m_txtAutoplay.resizeTextForBestFit = true;
-                m_txtAutoplay.resizeTextMinSize = 10;
-                m_txtAutoplay.resizeTextMaxSize = 15;
+                m_txtAutoplay.fontSize = 14;
+                m_txtAutoplay.fontStyle = FontStyle.Bold;
+                m_txtAutoplay.alignment = TextAnchor.MiddleCenter;
+                m_txtAutoplay.horizontalOverflow = HorizontalWrapMode.Overflow;
+                m_txtAutoplay.verticalOverflow = VerticalWrapMode.Overflow;
+                m_txtAutoplay.resizeTextForBestFit = false;
+                m_txtAutoplay.color = new Color(0.15f, 0.15f, 0.15f, 1f);
             }
         }
         else if (btnToggleAutoplay != null)

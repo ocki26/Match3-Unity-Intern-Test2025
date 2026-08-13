@@ -19,7 +19,7 @@ public class UIPanelMain : MonoBehaviour, IMenu
     private bool m_buttonsInitialized = false;
 
     // Compact button dimensions and generous spacing
-    private readonly Vector2 BUTTON_SIZE = new Vector2(230f, 46f);
+    private readonly Vector2 BUTTON_SIZE = new Vector2(240f, 48f);
     private const float BUTTON_SPACING = 68f;
     private const float START_Y = 105f;
 
@@ -29,7 +29,7 @@ public class UIPanelMain : MonoBehaviour, IMenu
     }
 
     /// <summary>
-    /// Ensures all 4 mode buttons exist, are resized cleanly, spaced apart, and bound to handlers.
+    /// Ensures all 4 mode buttons exist, are resized cleanly, spaced apart, and have fully visible text.
     /// </summary>
     private void InitializeButtons()
     {
@@ -106,6 +106,9 @@ public class UIPanelMain : MonoBehaviour, IMenu
         return btn;
     }
 
+    /// <summary>
+    /// Styles button rect and guarantees text component is fully stretched and visible without clipping.
+    /// </summary>
     private void ApplyButtonStyling(Button btn, string label, Vector2 pos)
     {
         RectTransform rt = btn.GetComponent<RectTransform>();
@@ -118,11 +121,24 @@ public class UIPanelMain : MonoBehaviour, IMenu
         Text txt = btn.GetComponentInChildren<Text>();
         if (txt != null)
         {
+            // Stretch Text RectTransform to fill entire button
+            RectTransform textRt = txt.GetComponent<RectTransform>();
+            if (textRt != null)
+            {
+                textRt.anchorMin = Vector2.zero;
+                textRt.anchorMax = Vector2.one;
+                textRt.offsetMin = Vector2.zero;
+                textRt.offsetMax = Vector2.zero;
+            }
+
             txt.text = label;
-            txt.fontSize = 18;
-            txt.resizeTextForBestFit = true;
-            txt.resizeTextMinSize = 12;
-            txt.resizeTextMaxSize = 18;
+            txt.fontSize = 16;
+            txt.fontStyle = FontStyle.Bold;
+            txt.alignment = TextAnchor.MiddleCenter;
+            txt.horizontalOverflow = HorizontalWrapMode.Overflow;
+            txt.verticalOverflow = VerticalWrapMode.Overflow;
+            txt.resizeTextForBestFit = false; // Prevent Unity bestFit zero-scale bug
+            txt.color = new Color(0.15f, 0.15f, 0.15f, 1f); // Clear, dark visible text
         }
     }
 
