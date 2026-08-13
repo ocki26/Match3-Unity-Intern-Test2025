@@ -68,33 +68,33 @@ public class BoardController : MonoBehaviour
     }
 
     /// <summary>
-    /// Detects raycast hits on board cells or tray items when tapped by player.
+    /// Detects taps on board cells (down movement) or tray items (up movement in Time Attack).
     /// </summary>
     private void HandlePlayerTap()
     {
         Vector2 mousePos = m_cam.ScreenToWorldPoint(Input.mousePosition);
-        var hit = Physics2D.Raycast(mousePos, Vector2.zero);
 
+        // 1. In Time Attack mode: Check if player tapped an item in the bottom tray to return it UP to the board
+        if (m_gameManager.CurrentPlayMode == GameManager.ePlayMode.TIME_ATTACK)
+        {
+            Item trayItem = m_trayController.GetItemAtWorldPosition(mousePos);
+            if (trayItem != null)
+            {
+                m_trayController.ReturnItemToBoard(trayItem);
+                return;
+            }
+        }
+
+        // 2. Check if player tapped a board Cell to move item DOWN into the tray
+        var hit = Physics2D.Raycast(mousePos, Vector2.zero);
         if (hit.collider != null)
         {
-            // 1. Check if clicked a board Cell to move item into tray
             Cell cell = hit.collider.GetComponent<Cell>();
             if (cell != null && !cell.IsEmpty)
             {
                 if (m_trayController.CanAddItem)
                 {
                     SelectCell(cell);
-                }
-                return;
-            }
-
-            // 2. In Time Attack mode: Check if clicked a tray item to return it to the board (Task 3 Requirement)
-            if (m_gameManager.CurrentPlayMode == GameManager.ePlayMode.TIME_ATTACK)
-            {
-                Item trayItem = m_trayController.GetItemFromView(hit.collider.transform);
-                if (trayItem != null)
-                {
-                    m_trayController.ReturnItemToBoard(trayItem);
                 }
             }
         }

@@ -49,12 +49,38 @@ public class TrayController : MonoBehaviour
                 GameObject bg = Instantiate(prefabBG, slotPos, Quaternion.identity, root);
                 bg.name = $"TraySlot_{i}";
                 bg.transform.localScale = Vector3.one * 0.9f;
+
+                // Disable Cell component on tray slot background to avoid raycast collisions with board cells
+                Cell cellComp = bg.GetComponent<Cell>();
+                if (cellComp != null)
+                {
+                    Destroy(cellComp);
+                }
             }
         }
     }
 
     /// <summary>
-    /// Moves an item from the board into the next available slot in the tray with smooth animation.
+    /// Checks if a tapped world position is over a tray slot holding an item.
+    /// </summary>
+    public Item GetItemAtWorldPosition(Vector2 worldPos)
+    {
+        for (int i = 0; i < m_trayItems.Count; i++)
+        {
+            if (i < m_slotPositions.Count)
+            {
+                // Slot hitbox radius check
+                if (Vector2.Distance(worldPos, m_slotPositions[i]) < 0.6f)
+                {
+                    return m_trayItems[i];
+                }
+            }
+        }
+        return null;
+    }
+
+    /// <summary>
+    /// Moves an item from the board DOWN into the next available slot in the tray.
     /// </summary>
     public void AddItem(Item item, Board board, Action onComplete = null)
     {
@@ -65,7 +91,7 @@ public class TrayController : MonoBehaviour
 
         Vector3 targetPos = m_slotPositions[m_trayItems.Count - 1];
 
-        // Smooth movement and scale animation (Task 3 Requirement)
+        // Smooth movement DOWN and scale-punch animation (Task 3 Requirement)
         item.View.DOScale(Vector3.one * 1.15f, 0.12f).SetEase(Ease.OutQuad).OnComplete(() =>
         {
             item.View.DOScale(Vector3.one, 0.13f).SetEase(Ease.InQuad);
@@ -78,7 +104,7 @@ public class TrayController : MonoBehaviour
     }
 
     /// <summary>
-    /// Returns a tray item back to its original cell on the board (Time Attack mode requirement).
+    /// Returns a tray item UP back to its original cell on the board (Time Attack mode requirement).
     /// </summary>
     public bool ReturnItemToBoard(Item item, Action onComplete = null)
     {
@@ -87,7 +113,7 @@ public class TrayController : MonoBehaviour
         Cell targetCell = item.OriginalCell;
         if (targetCell == null || !targetCell.IsEmpty)
         {
-            // If original cell is occupied, return fails
+            // Original cell must be empty to return
             return false;
         }
 
@@ -97,7 +123,7 @@ public class TrayController : MonoBehaviour
         // Reassign item to board cell
         targetCell.Assign(item);
 
-        // Animate movement back to board cell
+        // Animate movement UP back to board cell
         item.View.DOMove(targetCell.transform.position, 0.25f).SetEase(Ease.OutQuad).OnComplete(() =>
         {
             RearrangeTrayItems();
@@ -106,14 +132,6 @@ public class TrayController : MonoBehaviour
         });
 
         return true;
-    }
-
-    /// <summary>
-    /// Finds which Item in the tray corresponds to a given visual Transform/Collider.
-    /// </summary>
-    public Item GetItemFromView(Transform viewTransform)
-    {
-        return m_trayItems.FirstOrDefault(item => item != null && item.View == viewTransform);
     }
 
     /// <summary>
