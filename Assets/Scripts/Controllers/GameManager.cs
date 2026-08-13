@@ -1,17 +1,18 @@
-﻿using DG.Tweening;
+using DG.Tweening;
 using System;
 using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 public class GameManager : MonoBehaviour
 {
     public event Action<eStateGame> StateChangedAction = delegate { };
 
-    public enum eLevelMode
+    public enum ePlayMode
     {
-        TIMER,
-        MOVES
+        MANUAL,        // Player taps manually
+        AUTOPLAY_WIN,  // AI plays to win
+        AUTO_LOSE,     // AI plays to lose
+        TIME_ATTACK    // Time Attack mode: 1-minute timer, can return items to board
     }
 
     public enum eStateGame
@@ -23,117 +24,114 @@ public class GameManager : MonoBehaviour
         GAME_OVER,
     }
 
-    private eStateGame m_state;
-    public eStateGame State
-    {
-        get { return m_state; }
-        private set
-        {
-            m_state = value;
+    public eStateGame State { get; private set; }
+    public ePlayMode CurrentPlayMode { get; private set; }
+    public bool IsGameWon { get; private set; }
 
-            StateChangedAction(m_state);
-        }
-    }
-
+    private const float TIME_ATTACK_DURATION = 60f; // 1 minute countdown for Time Attack mode
+    private float m_timeRemaining;
 
     private GameSettings m_gameSettings;
-
-
     private BoardController m_boardController;
-
+    private AutoplayController m_autoplayController;
     private UIMainManager m_uiMenu;
-
-    private LevelCondition m_levelCondition;
 
     private void Awake()
     {
         State = eStateGame.SETUP;
-
         m_gameSettings = Resources.Load<GameSettings>(Constants.GAME_SETTINGS_PATH);
 
         m_uiMenu = FindObjectOfType<UIMainManager>();
         m_uiMenu.Setup(this);
+
+        m_autoplayController = gameObject.AddComponent<AutoplayController>();
     }
 
     void Start()
     {
-        State = eStateGame.MAIN_MENU;
+        SetState(eStateGame.MAIN_MENU);
     }
 
-    // Update is called once per frame
     void Update()
     {
-        if (m_boardController != null) m_boardController.Update();
-    }
+        // Handle Time Attack 1-minute countdown
+        if (State == eStateGame.GAME_STARTED && CurrentPlayMode == ePlayMode.TIME_ATTACK)
+        {
+            m_timeRemaining -= Time.deltaTime;
+            m_uiMenu.UpdateTimerDisplay(m_timeRemaining);
 
+            // Lose condition for Time Attack: Time runs out
+            if (m_timeRemaining <= 0f)
+            {
+                m_timeRemaining = 0f;
+                m_uiMenu.UpdateTimerDisplay(0f);
+                OnGameEnded(false);
+            }
+        }
+    }
 
     internal void SetState(eStateGame state)
     {
         State = state;
+        StateChangedAction(State);
 
-        if(State == eStateGame.PAUSE)
-        {
-            DOTween.PauseAll();
-        }
-        else
-        {
-            DOTween.PlayAll();
-        }
+        if (State == eStateGame.PAUSE) DOTween.PauseAll();
+        else DOTween.PlayAll();
     }
 
-    public void LoadLevel(eLevelMode mode)
+    /// <summary>
+    /// Starts a level under the specified gameplay mode.
+    /// </summary>
+    public void StartLevel(ePlayMode mode)
     {
+        ClearLevel();
+        CurrentPlayMode = mode;
+
         m_boardController = new GameObject("BoardController").AddComponent<BoardController>();
         m_boardController.StartGame(this, m_gameSettings);
 
-        if (mode == eLevelMode.MOVES)
+        // Reset timer if playing in Time Attack mode
+        if (mode == ePlayMode.TIME_ATTACK)
         {
-            m_levelCondition = this.gameObject.AddComponent<LevelMoves>();
-            m_levelCondition.Setup(m_gameSettings.LevelMoves, m_uiMenu.GetLevelConditionView(), m_boardController);
-        }
-        else if (mode == eLevelMode.TIMER)
-        {
-            m_levelCondition = this.gameObject.AddComponent<LevelTime>();
-            m_levelCondition.Setup(m_gameSettings.LevelMoves, m_uiMenu.GetLevelConditionView(), this);
+            m_timeRemaining = TIME_ATTACK_DURATION;
+            m_uiMenu.UpdateTimerDisplay(m_timeRemaining);
         }
 
-        m_levelCondition.ConditionCompleteEvent += GameOver;
+        SetState(eStateGame.GAME_STARTED);
 
-        State = eStateGame.GAME_STARTED;
+        // Start AI autoplay if requested
+        if (mode == ePlayMode.AUTOPLAY_WIN)
+        {
+            m_autoplayController.StartAutoplay(m_boardController, true);
+        }
+        else if (mode == ePlayMode.AUTO_LOSE)
+        {
+            m_autoplayController.StartAutoplay(m_boardController, false);
+        }
     }
 
-    public void GameOver()
+    /// <summary>
+    /// Handles game ending (win or lose).
+    /// </summary>
+    public void OnGameEnded(bool isWin)
     {
-        StartCoroutine(WaitBoardController());
+        IsGameWon = isWin;
+        if (m_autoplayController) m_autoplayController.StopAutoplay();
+        SetState(eStateGame.GAME_OVER);
     }
 
+    /// <summary>
+    /// Cleans up board controller and autoplay components.
+    /// </summary>
     internal void ClearLevel()
     {
+        if (m_autoplayController) m_autoplayController.StopAutoplay();
+
         if (m_boardController)
         {
             m_boardController.Clear();
             Destroy(m_boardController.gameObject);
             m_boardController = null;
-        }
-    }
-
-    private IEnumerator WaitBoardController()
-    {
-        while (m_boardController.IsBusy)
-        {
-            yield return new WaitForEndOfFrame();
-        }
-
-        yield return new WaitForSeconds(1f);
-
-        State = eStateGame.GAME_OVER;
-
-        if (m_levelCondition != null)
-        {
-            m_levelCondition.ConditionCompleteEvent -= GameOver;
-
-            Destroy(m_levelCondition);
-            m_levelCondition = null;
         }
     }
 }

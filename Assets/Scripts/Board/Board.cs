@@ -1,4 +1,4 @@
-﻿using DG.Tweening;
+using DG.Tweening;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -72,8 +72,58 @@ public class Board
 
     }
 
+    /// <summary>
+    /// Populates the board with items generated in triplets (divisible by 3) and shuffled randomly.
+    /// </summary>
     internal void Fill()
     {
+        int totalCells = boardSizeX * boardSizeY;
+
+        // Ensure total cell count is divisible by 3 (e.g., 4 x 6 = 24 cells => 8 triplets)
+        if (totalCells % 3 != 0)
+        {
+            Debug.LogError($"[Board] Total cell count ({totalCells}) must be divisible by 3.");
+            return;
+        }
+
+        int numberOfTriplets = totalCells / 3;
+        List<NormalItem.eNormalType> itemTypesList = new List<NormalItem.eNormalType>();
+        Array allTypes = Enum.GetValues(typeof(NormalItem.eNormalType));
+
+        // 1. Create list with 3 identical items per triplet (guarantee all fish types are included)
+        List<NormalItem.eNormalType> availableTypes = allTypes.Cast<NormalItem.eNormalType>().ToList();
+
+        for (int i = 0; i < numberOfTriplets; i++)
+        {
+            NormalItem.eNormalType chosenType;
+
+            // First guarantee all distinct fish types are added once
+            if (i < availableTypes.Count)
+            {
+                chosenType = availableTypes[i];
+            }
+            else
+            {
+                // Fill remaining triplets randomly
+                chosenType = (NormalItem.eNormalType)allTypes.GetValue(UnityEngine.Random.Range(0, allTypes.Length));
+            }
+
+            itemTypesList.Add(chosenType);
+            itemTypesList.Add(chosenType);
+            itemTypesList.Add(chosenType);
+        }
+
+        // 2. Fisher-Yates shuffle
+        for (int i = 0; i < itemTypesList.Count; i++)
+        {
+            int rnd = UnityEngine.Random.Range(i, itemTypesList.Count);
+            NormalItem.eNormalType temp = itemTypesList[i];
+            itemTypesList[i] = itemTypesList[rnd];
+            itemTypesList[rnd] = temp;
+        }
+
+        // 3. Assign shuffled items to board cells
+        int index = 0;
         for (int x = 0; x < boardSizeX; x++)
         {
             for (int y = 0; y < boardSizeY; y++)
@@ -81,26 +131,7 @@ public class Board
                 Cell cell = m_cells[x, y];
                 NormalItem item = new NormalItem();
 
-                List<NormalItem.eNormalType> types = new List<NormalItem.eNormalType>();
-                if (cell.NeighbourBottom != null)
-                {
-                    NormalItem nitem = cell.NeighbourBottom.Item as NormalItem;
-                    if (nitem != null)
-                    {
-                        types.Add(nitem.ItemType);
-                    }
-                }
-
-                if (cell.NeighbourLeft != null)
-                {
-                    NormalItem nitem = cell.NeighbourLeft.Item as NormalItem;
-                    if (nitem != null)
-                    {
-                        types.Add(nitem.ItemType);
-                    }
-                }
-
-                item.SetType(Utils.GetRandomNormalTypeExcept(types.ToArray()));
+                item.SetType(itemTypesList[index++]);
                 item.SetView();
                 item.SetViewRoot(m_root);
 
@@ -673,5 +704,42 @@ public class Board
                 m_cells[x, y] = null;
             }
         }
+    }
+
+    /// <summary>
+    /// Checks if all cells on the board have been cleared (Win condition check).
+    /// </summary>
+    public bool IsAllCleared()
+    {
+        for (int x = 0; x < boardSizeX; x++)
+        {
+            for (int y = 0; y < boardSizeY; y++)
+            {
+                if (!m_cells[x, y].IsEmpty)
+                {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    /// <summary>
+    /// Retrieves all cells that currently contain an item (Used by Autoplay AI).
+    /// </summary>
+    public List<Cell> GetActiveCells()
+    {
+        List<Cell> activeCells = new List<Cell>();
+        for (int x = 0; x < boardSizeX; x++)
+        {
+            for (int y = 0; y < boardSizeY; y++)
+            {
+                if (!m_cells[x, y].IsEmpty)
+                {
+                    activeCells.Add(m_cells[x, y]);
+                }
+            }
+        }
+        return activeCells;
     }
 }

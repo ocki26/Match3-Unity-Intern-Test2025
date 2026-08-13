@@ -1,14 +1,12 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
-using UnityEngine.UI;
 
 public class UIMainManager : MonoBehaviour
 {
     private IMenu[] m_menuList;
-
     private GameManager m_gameManager;
 
     private void Awake()
@@ -24,14 +22,9 @@ public class UIMainManager : MonoBehaviour
         }
     }
 
-    internal void ShowMainMenu()
-    {
-        m_gameManager.ClearLevel();
-        m_gameManager.SetState(GameManager.eStateGame.MAIN_MENU);
-    }
-
     void Update()
     {
+        // Toggle pause on Escape key
         if (Input.GetKeyDown(KeyCode.Escape))
         {
             if (m_gameManager.State == GameManager.eStateGame.GAME_STARTED)
@@ -45,6 +38,9 @@ public class UIMainManager : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Connects UIMainManager with GameManager and listens to state changes.
+    /// </summary>
     internal void Setup(GameManager gameManager)
     {
         m_gameManager = gameManager;
@@ -77,26 +73,21 @@ public class UIMainManager : MonoBehaviour
         for (int i = 0; i < m_menuList.Length; i++)
         {
             IMenu menu = m_menuList[i];
-            if(menu is T)
+            if (menu is T)
             {
                 menu.Show();
             }
             else
             {
                 menu.Hide();
-            }            
+            }
         }
     }
 
-    internal Text GetLevelConditionView()
+    internal void ShowMainMenu()
     {
-        UIPanelGame game = m_menuList.Where(x => x is UIPanelGame).Cast<UIPanelGame>().FirstOrDefault();
-        if (game)
-        {
-            return game.LevelConditionView;
-        }
-
-        return null;
+        m_gameManager.ClearLevel();
+        m_gameManager.SetState(GameManager.eStateGame.MAIN_MENU);
     }
 
     internal void ShowPauseMenu()
@@ -104,18 +95,26 @@ public class UIMainManager : MonoBehaviour
         m_gameManager.SetState(GameManager.eStateGame.PAUSE);
     }
 
-    internal void LoadLevelMoves()
-    {
-        m_gameManager.LoadLevel(GameManager.eLevelMode.MOVES);
-    }
-
-    internal void LoadLevelTimer()
-    {
-        m_gameManager.LoadLevel(GameManager.eLevelMode.TIMER);
-    }
-
     internal void ShowGameMenu()
     {
         m_gameManager.SetState(GameManager.eStateGame.GAME_STARTED);
     }
+
+    /// <summary>
+    /// Updates timer display on UIPanelGame.
+    /// </summary>
+    internal void UpdateTimerDisplay(float secondsRemaining)
+    {
+        UIPanelGame gamePanel = m_menuList.OfType<UIPanelGame>().FirstOrDefault();
+        if (gamePanel != null)
+        {
+            gamePanel.UpdateTimerText(secondsRemaining);
+        }
+    }
+
+    // Play Mode triggers
+    internal void StartManualPlay() => m_gameManager.StartLevel(GameManager.ePlayMode.MANUAL);
+    internal void StartAutoplayWin() => m_gameManager.StartLevel(GameManager.ePlayMode.AUTOPLAY_WIN);
+    internal void StartAutoLose() => m_gameManager.StartLevel(GameManager.ePlayMode.AUTO_LOSE);
+    internal void StartTimeAttack() => m_gameManager.StartLevel(GameManager.ePlayMode.TIME_ATTACK);
 }
