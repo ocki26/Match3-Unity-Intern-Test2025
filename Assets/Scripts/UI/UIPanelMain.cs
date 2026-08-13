@@ -18,13 +18,18 @@ public class UIPanelMain : MonoBehaviour, IMenu
     private UIMainManager m_mngr;
     private bool m_buttonsInitialized = false;
 
+    // Compact button dimensions and generous spacing
+    private readonly Vector2 BUTTON_SIZE = new Vector2(230f, 46f);
+    private const float BUTTON_SPACING = 68f;
+    private const float START_Y = 105f;
+
     private void Awake()
     {
         InitializeButtons();
     }
 
     /// <summary>
-    /// Ensures all 4 mode buttons exist, are cleanly positioned, labeled, and bound to handlers.
+    /// Ensures all 4 mode buttons exist, are resized cleanly, spaced apart, and bound to handlers.
     /// </summary>
     private void InitializeButtons()
     {
@@ -36,34 +41,47 @@ public class UIPanelMain : MonoBehaviour, IMenu
         if (template != null)
         {
             Transform parent = template.transform.parent;
-            RectTransform templateRt = template.GetComponent<RectTransform>();
-            Vector2 basePos = templateRt != null ? templateRt.anchoredPosition : Vector2.zero;
 
-            // 1. Play Button
+            // 1. Play Button (Manual)
             if (btnPlay == null)
             {
                 btnPlay = template;
                 btnPlay.name = "Btn_PlayManual";
-                SetButtonText(btnPlay, "PLAY (MANUAL)");
-                if (templateRt != null) templateRt.anchoredPosition = new Vector2(0, 100);
+                ApplyButtonStyling(btnPlay, "PLAY (MANUAL)", new Vector2(0, START_Y));
+            }
+            else
+            {
+                ApplyButtonStyling(btnPlay, "PLAY (MANUAL)", new Vector2(0, START_Y));
             }
 
             // 2. Autoplay (Auto Win) Button
             if (btnAutoplay == null)
             {
-                btnAutoplay = CreateButton(template, parent, "Btn_Autoplay", "AUTOPLAY (AUTO WIN)", new Vector2(0, 30));
+                btnAutoplay = CreateButton(template, parent, "Btn_Autoplay", "AUTOPLAY (AUTO WIN)", new Vector2(0, START_Y - BUTTON_SPACING));
+            }
+            else
+            {
+                ApplyButtonStyling(btnAutoplay, "AUTOPLAY (AUTO WIN)", new Vector2(0, START_Y - BUTTON_SPACING));
             }
 
             // 3. Auto Lose Button
             if (btnAutoLose == null)
             {
-                btnAutoLose = CreateButton(template, parent, "Btn_AutoLose", "AUTO LOSE", new Vector2(0, -40));
+                btnAutoLose = CreateButton(template, parent, "Btn_AutoLose", "AUTO LOSE", new Vector2(0, START_Y - BUTTON_SPACING * 2));
+            }
+            else
+            {
+                ApplyButtonStyling(btnAutoLose, "AUTO LOSE", new Vector2(0, START_Y - BUTTON_SPACING * 2));
             }
 
             // 4. Time Attack Button
             if (btnTimeAttack == null)
             {
-                btnTimeAttack = CreateButton(template, parent, "Btn_TimeAttack", "TIME ATTACK (1 MIN)", new Vector2(0, -110));
+                btnTimeAttack = CreateButton(template, parent, "Btn_TimeAttack", "TIME ATTACK (1 MIN)", new Vector2(0, START_Y - BUTTON_SPACING * 3));
+            }
+            else
+            {
+                ApplyButtonStyling(btnTimeAttack, "TIME ATTACK (1 MIN)", new Vector2(0, START_Y - BUTTON_SPACING * 3));
             }
         }
 
@@ -80,25 +98,31 @@ public class UIPanelMain : MonoBehaviour, IMenu
         newGo.name = objName;
         newGo.SetActive(true);
 
-        RectTransform rt = newGo.GetComponent<RectTransform>();
-        if (rt != null)
-        {
-            rt.anchoredPosition = pos;
-        }
-
         Button btn = newGo.GetComponent<Button>();
         btn.onClick.RemoveAllListeners();
-        SetButtonText(btn, label);
+
+        ApplyButtonStyling(btn, label, pos);
 
         return btn;
     }
 
-    private void SetButtonText(Button btn, string text)
+    private void ApplyButtonStyling(Button btn, string label, Vector2 pos)
     {
+        RectTransform rt = btn.GetComponent<RectTransform>();
+        if (rt != null)
+        {
+            rt.sizeDelta = BUTTON_SIZE;
+            rt.anchoredPosition = pos;
+        }
+
         Text txt = btn.GetComponentInChildren<Text>();
         if (txt != null)
         {
-            txt.text = text;
+            txt.text = label;
+            txt.fontSize = 18;
+            txt.resizeTextForBestFit = true;
+            txt.resizeTextMinSize = 12;
+            txt.resizeTextMaxSize = 18;
         }
     }
 
