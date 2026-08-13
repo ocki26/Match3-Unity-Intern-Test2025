@@ -9,17 +9,78 @@ public class UIPanelGame : MonoBehaviour, IMenu
     public Text LevelConditionView;
 
     [SerializeField] private Button btnPause;
+    [SerializeField] private Button btnToggleAutoplay; // In-game toggle button for Autoplay
 
     private UIMainManager m_mngr;
+    private Text m_txtAutoplay;
+    private bool m_isAutoplayActive = false;
 
     private void Awake()
     {
         if (btnPause) btnPause.onClick.AddListener(OnClickPause);
+
+        // Dynamically create in-game Autoplay toggle button if not present in Scene
+        EnsureAutoplayButtonExists();
+    }
+
+    private void EnsureAutoplayButtonExists()
+    {
+        if (btnToggleAutoplay == null && btnPause != null)
+        {
+            GameObject newObj = Instantiate(btnPause.gameObject, btnPause.transform.parent);
+            newObj.name = "Btn_ToggleAutoplay";
+            newObj.SetActive(true);
+
+            RectTransform rt = newObj.GetComponent<RectTransform>();
+            RectTransform pauseRt = btnPause.GetComponent<RectTransform>();
+
+            if (rt != null && pauseRt != null)
+            {
+                // Position next to Pause button
+                rt.anchoredPosition = pauseRt.anchoredPosition + new Vector2(0, -70);
+                rt.sizeDelta = new Vector2(pauseRt.sizeDelta.x + 30, pauseRt.sizeDelta.y);
+            }
+
+            btnToggleAutoplay = newObj.GetComponent<Button>();
+            btnToggleAutoplay.onClick.RemoveAllListeners();
+
+            m_txtAutoplay = btnToggleAutoplay.GetComponentInChildren<Text>();
+            if (m_txtAutoplay != null)
+            {
+                m_txtAutoplay.text = "AUTO: OFF";
+            }
+        }
+        else if (btnToggleAutoplay != null)
+        {
+            m_txtAutoplay = btnToggleAutoplay.GetComponentInChildren<Text>();
+        }
+
+        if (btnToggleAutoplay != null)
+        {
+            btnToggleAutoplay.onClick.AddListener(OnClickToggleAutoplay);
+        }
     }
 
     private void OnClickPause()
     {
         m_mngr.ShowPauseMenu();
+    }
+
+    private void OnClickToggleAutoplay()
+    {
+        if (m_mngr != null)
+        {
+            m_isAutoplayActive = m_mngr.ToggleInGameAutoplay();
+            UpdateAutoplayButtonVisual();
+        }
+    }
+
+    private void UpdateAutoplayButtonVisual()
+    {
+        if (m_txtAutoplay != null)
+        {
+            m_txtAutoplay.text = m_isAutoplayActive ? "AUTO: ON 🟢" : "AUTO: OFF ⚪";
+        }
     }
 
     public void Setup(UIMainManager mngr)
@@ -54,6 +115,8 @@ public class UIPanelGame : MonoBehaviour, IMenu
     public void Show()
     {
         this.gameObject.SetActive(true);
+        m_isAutoplayActive = false;
+        UpdateAutoplayButtonVisual();
     }
 
     public void Hide()

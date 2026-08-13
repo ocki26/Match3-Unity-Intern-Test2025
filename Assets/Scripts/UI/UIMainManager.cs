@@ -112,6 +112,26 @@ public class UIMainManager : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Resets timer display on UIPanelGame.
+    /// </summary>
+    internal void ResetTimerDisplay()
+    {
+        UIPanelGame gamePanel = m_menuList.OfType<UIPanelGame>().FirstOrDefault();
+        if (gamePanel != null)
+        {
+            gamePanel.ResetConditionView();
+        }
+    }
+
+    /// <summary>
+    /// Toggles in-game autoplay on and off.
+    /// </summary>
+    internal bool ToggleInGameAutoplay()
+    {
+        return m_gameManager != null && m_gameManager.ToggleAutoplay();
+    }
+
     // Play Mode triggers
     internal void StartManualPlay() => m_gameManager.StartLevel(GameManager.ePlayMode.MANUAL);
     internal void StartAutoplayWin() => m_gameManager.StartLevel(GameManager.ePlayMode.AUTOPLAY_WIN);

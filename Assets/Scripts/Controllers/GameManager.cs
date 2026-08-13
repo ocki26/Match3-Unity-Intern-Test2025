@@ -96,6 +96,10 @@ public class GameManager : MonoBehaviour
             m_timeRemaining = TIME_ATTACK_DURATION;
             m_uiMenu.UpdateTimerDisplay(m_timeRemaining);
         }
+        else
+        {
+            m_uiMenu.ResetTimerDisplay();
+        }
 
         SetState(eStateGame.GAME_STARTED);
 
@@ -107,6 +111,29 @@ public class GameManager : MonoBehaviour
         else if (mode == ePlayMode.AUTO_LOSE)
         {
             m_autoplayController.StartAutoplay(m_boardController, false);
+        }
+    }
+
+    /// <summary>
+    /// Toggles autoplay mode on/off in real-time during gameplay.
+    /// </summary>
+    public bool ToggleAutoplay()
+    {
+        if (State != eStateGame.GAME_STARTED || m_boardController == null) return false;
+
+        if (CurrentPlayMode == ePlayMode.AUTOPLAY_WIN)
+        {
+            // Switch back to manual play
+            CurrentPlayMode = ePlayMode.MANUAL;
+            m_autoplayController.StopAutoplay();
+            return false;
+        }
+        else
+        {
+            // Switch to autoplay
+            CurrentPlayMode = ePlayMode.AUTOPLAY_WIN;
+            m_autoplayController.StartAutoplay(m_boardController, true);
+            return true;
         }
     }
 
